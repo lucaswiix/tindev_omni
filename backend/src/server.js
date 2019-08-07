@@ -3,8 +3,9 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const routes = require('./routes');
 const server = express();
+const config = require('./config.json');
 
-mongoose.connect('mongodb+srv://lucaswiix:BHU*nji9@cluster0-3cpzt.mongodb.net/omnistack8?retryWrites=true&w=majority', {
+mongoose.connect(config.url, {
     useNewUrlParser: true
 });
 

@@ -1,0 +1,4 @@
+{
+    "url":"mongodb+srv://<username>:<password>@<clusterUrl>/<databaseName>?retryWrites=true&w=majority",
+    "getUrlFrom": "https://www.mongodb.com/cloud/atlas"
+}
