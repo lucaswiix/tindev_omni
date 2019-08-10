@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import io from 'socket.io-client';
 import AsyncStorage from '@react-native-community/async-storage';
 import  { View, Text, SafeAreaView, Image, StyleSheet, TouchableOpacity } from 'react-native';
 
 import logo from '../assets/logo.png';
+import itsamatchLogo from '../assets/itsamatch.png';
 import like from '../assets/like.png';
 import dislike from '../assets/dislike.png';
 
@@ -13,15 +15,15 @@ export default function Main({ navigation }) {
     const [loading, setLoading] = useState(true);
 
     const [users, setUsers] = useState([]);
+    const [matchDev, setMatchDev] = useState(null);
+
     useEffect(() => {
         async function loadDevs() {
-
             const response = await api.get('/devs', {
                 headers: {
                     user: loggedId
                 }
-            });
-            
+            });            
             setUsers(response.data);
             setLoading(false);
         }
@@ -30,10 +32,19 @@ export default function Main({ navigation }) {
             loadDevs();
         } catch (error) {
             console.log('Some error happended');
-
         }
 
     }, [loggedId, loading]);
+
+    useEffect(()=>{
+        const socket = io('http://192.168.51.2:3333', {
+            query: { user: loggedId}
+        });
+        socket.on('match', dev =>{
+            setMatchDev(dev);
+        });
+
+    }, [loggedId])
 
     async function handleLogout(){
         await AsyncStorage.clear();
@@ -49,12 +60,10 @@ export default function Main({ navigation }) {
         });
 
         setUsers(rest);
-
     };
 
     async function handleDislike(){
         const [ user, ...rest ] = users;
-
 
         await api.post(`/devs/${user._id}/dislikes`, null, {
             headers: { user: loggedId }
@@ -85,7 +94,7 @@ export default function Main({ navigation }) {
         )}
         </View>
 
-        {users.length > 0 ? (
+        {users.length > 0 && (
         <View style={styles.buttonsContainer}>
             <TouchableOpacity onPress={handleDislike} style={styles.button}>
                 <Image style={styles.buttonsAction} source={dislike} />
@@ -94,7 +103,23 @@ export default function Main({ navigation }) {
                 <Image style={styles.buttonsAction} source={like} />
             </TouchableOpacity>       
         </View>
-        ) : <Text /> }
+        ) }
+
+        {matchDev && (
+            <View style={styles.matchContainer}>
+                
+                    <Image style={styles.matchImage} source={itsamatchLogo} alt="It's a match!" />
+                    <Image style={styles.matchProfile} source={{ uri: matchDev.avatar }} alt="Its a match" />
+                    
+                    <Text style={styles.matchName}>{matchDev.name != null ? matchDev.name : matchDev.user}</Text>
+                    <Text style={styles.matchBio}>{matchDev.bio}</Text>
+                    
+                    <TouchableOpacity onPress={() => setMatchDev(null)} style={styles.matchCloseBtn}>
+                        <Text style={styles.closeMatch}>Fechar</Text>    
+                    </TouchableOpacity>
+               
+            </View>
+        )}
 
     </SafeAreaView>
     );
@@ -178,5 +203,48 @@ const styles = StyleSheet.create({
         fontSize: 24,
         fontWeight: 'bold',
         color: '#999'
+    },
+    matchContainer:{
+        ... StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    matchProfile: {
+        height: 160,
+        width: 160,
+        borderRadius: 80,
+        borderWidth: 5,
+        borderColor: '#fff',
+        marginVertical: 30,
+    },
+    matchName: {
+        fontWeight: 'bold',
+        color:'#fff',
+        fontSize:26,
+        alignSelf:'center'
+    },
+    matchBio: {
+        marginTop: 10,
+        fontSize: 16,
+        color:'rgba(255, 255, 255, 0.8)',
+        lineHeight: 24,
+        textAlign: 'center',
+        paddingHorizontal: 30,
+    },
+    matchCloseBtn: {
+        alignSelf:'center',
+        color:'#fff',
+    },
+    closeMatch: {
+        fontSize: 16,      
+        color:'rgba(255, 255, 255, 0.8)',
+        marginTop: 30,
+        textAlign: 'center',
+        fontWeight:'bold'
+    },
+    matchImage: {
+        height: 60,
+        resizeMode: 'contain'
     }
 });
